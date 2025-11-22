@@ -43,21 +43,51 @@ with col2:
     st.markdown("### Trade-in Valuation Tool")
 
 # Sidebar for settings
+# -----------------------------------------
+# 1. SETUP SIDEBAR (Model Selection Always Visible)
+# -----------------------------------------
 with st.sidebar:
-    st.header("Settings")
-    api_key_input = st.text_input("Google API Key", type="password", value=os.getenv("GOOGLE_API_KEY") or "")
-    if not api_key_input:
-        st.warning("Please enter your Google API Key to proceed.")
+    st.header("⚙️ Configuration")
     
+    # Model Switcher (Keep this!)
     model_name = st.selectbox(
-    "Model Engine", 
-    [
-        "gemini-2.5-flash",           # Speed choice (Best for 'iPad on the lot')
-        "gemini-3-pro-preview",       # Brain choice (Best for complex negotiation logic)
-        "gemini-2.0-flash-001"        # Fallback/Stable choice
-    ], 
-    index=0
-)
+        "Model Engine", 
+        [
+            "gemini-1.5-flash",       # Fast, Reliable (Demo Safe)
+            "gemini-2.0-flash-exp",   # Good Middle Ground
+            "gemini-1.5-pro",         # Slower, Smarter
+            "gemini-3-pro-preview"    # Bleeding Edge (High Risk of 429)
+        ], 
+        index=0
+    )
+    
+    # Add a status indicator for the key
+    # We'll define 'api_key_input' logic below, but we show status here
+    if "GOOGLE_API_KEY" in st.secrets:
+        st.caption("🟢 Cloud Key Active")
+    elif os.getenv("GOOGLE_API_KEY"):
+        st.caption("🟢 Local Key Active")
+    else:
+        st.warning("🔴 No Key Found")
+
+# -----------------------------------------
+# 2. AUTHENTICATION LOGIC (Hidden Process)
+# -----------------------------------------
+# Initialize variable
+api_key_input = None
+
+# Check 1: Streamlit Cloud Secrets (Production)
+if "GOOGLE_API_KEY" in st.secrets:
+    api_key_input = st.secrets["GOOGLE_API_KEY"]
+
+# Check 2: Local .env file (Development)
+elif os.getenv("GOOGLE_API_KEY"):
+    api_key_input = os.getenv("GOOGLE_API_KEY")
+
+# Check 3: Fallback - Manual Input (Only show this if 1 & 2 fail)
+if not api_key_input:
+    with st.sidebar:
+        api_key_input = st.text_input("🔑 Enter API Key manually", type="password")
 
 # Main Content
 st.info("Take a photo of the car to get an instant valuation from our AI Senior Buyer.")
