@@ -44,50 +44,51 @@ with col2:
 
 # Sidebar for settings
 # -----------------------------------------
-# 1. SETUP SIDEBAR (Model Selection Always Visible)
-# -----------------------------------------
+# ---------------------------------------------------------
+# 1. AUTHENTICATION (The Crash-Proof Method)
+# ---------------------------------------------------------
+api_key_input = None
+
+# Attempt 1: Check Local Environment (.env) - Safe for Laptop
+if os.getenv("GOOGLE_API_KEY"):
+    api_key_input = os.getenv("GOOGLE_API_KEY")
+
+# Attempt 2: Check Cloud Secrets - Wrapped in Try/Except to prevent local crashes
+if not api_key_input:
+    try:
+        # This line crashes locally if not wrapped in 'try', so we protect it
+        if "GOOGLE_API_KEY" in st.secrets:
+            api_key_input = st.secrets["GOOGLE_API_KEY"]
+    except Exception:
+        # If secrets file is missing (Locally), we just do nothing and move on
+        pass
+
+# ---------------------------------------------------------
+# 2. SIDEBAR UI
+# ---------------------------------------------------------
 with st.sidebar:
-    st.header("⚙️ Configuration")
+    st.header("⚙️ Settings")
     
-    # Model Switcher (Keep this!)
+    # VISUAL STATUS
+    if api_key_input:
+        st.caption("🟢 API Key System: Online")
+    else:
+        st.warning("🔴 Connection Missing")
+        api_key_input = st.text_input("Enter Google API Key", type="password")
+    
+    st.divider()
+    
+    # MODEL SELECTOR
     model_name = st.selectbox(
-        "Model Engine", 
+        "AI Engine", 
         [
-            "gemini-1.5-flash",       # Fast, Reliable (Demo Safe)
-            "gemini-2.0-flash-exp",   # Good Middle Ground
-            "gemini-1.5-pro",         # Slower, Smarter
-            "gemini-3-pro-preview"    # Bleeding Edge (High Risk of 429)
+            "gemini-1.5-flash",
+            "gemini-2.0-flash-exp",
+            "gemini-1.5-pro", 
+            "gemini-3-pro-preview"
         ], 
         index=0
     )
-    
-    # Add a status indicator for the key
-    # We'll define 'api_key_input' logic below, but we show status here
-    if "GOOGLE_API_KEY" in st.secrets:
-        st.caption("🟢 Cloud Key Active")
-    elif os.getenv("GOOGLE_API_KEY"):
-        st.caption("🟢 Local Key Active")
-    else:
-        st.warning("🔴 No Key Found")
-
-# -----------------------------------------
-# 2. AUTHENTICATION LOGIC (Hidden Process)
-# -----------------------------------------
-# Initialize variable
-api_key_input = None
-
-# Check 1: Streamlit Cloud Secrets (Production)
-if "GOOGLE_API_KEY" in st.secrets:
-    api_key_input = st.secrets["GOOGLE_API_KEY"]
-
-# Check 2: Local .env file (Development)
-elif os.getenv("GOOGLE_API_KEY"):
-    api_key_input = os.getenv("GOOGLE_API_KEY")
-
-# Check 3: Fallback - Manual Input (Only show this if 1 & 2 fail)
-if not api_key_input:
-    with st.sidebar:
-        api_key_input = st.text_input("🔑 Enter API Key manually", type="password")
 
 # Main Content
 st.info("Take a photo of the car to get an instant valuation from our AI Senior Buyer.")
