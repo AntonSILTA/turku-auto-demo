@@ -11,7 +11,7 @@ load_dotenv()
 
 # Configure Page
 st.set_page_config(
-    page_title="Turku Auto-Center Valuation",
+    page_title="Auton Arviointi / Car Evaluation App",
     page_icon="🚗",
     layout="centered"
 )
@@ -34,53 +34,95 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# Header
-col1, col2 = st.columns([1, 4])
-with col1:
-    st.write("🚗") # Placeholder for logo
-with col2:
-    st.markdown("<h1 class='header-text'>Turku Auto-Center</h1>", unsafe_allow_html=True)
-    st.markdown("### Trade-in Valuation Tool")
-
-# Sidebar for settings
-# -----------------------------------------
 # ---------------------------------------------------------
-# 1. AUTHENTICATION (The Crash-Proof Method)
+# TRANSLATION DICTIONARY
 # ---------------------------------------------------------
-api_key_input = None
-
-# Attempt 1: Check Local Environment (.env) - Safe for Laptop
-if os.getenv("GOOGLE_API_KEY"):
-    api_key_input = os.getenv("GOOGLE_API_KEY")
-
-# Attempt 2: Check Cloud Secrets - Wrapped in Try/Except to prevent local crashes
-if not api_key_input:
-    try:
-        # This line crashes locally if not wrapped in 'try', so we protect it
-        if "GOOGLE_API_KEY" in st.secrets:
-            api_key_input = st.secrets["GOOGLE_API_KEY"]
-    except Exception:
-        # If secrets file is missing (Locally), we just do nothing and move on
-        pass
+translations = {
+    'Suomi': {
+        'title': 'Auton Arviointi',
+        'subtitle': 'Vaihtoauton Arviointityökalu',
+        'settings': '⚙️ Asetukset',
+        'api_status_ok': '🟢 API-avain: Yhdistetty',
+        'api_status_error': '🔴 Yhteys puuttuu',
+        'enter_api_key': 'Syötä Google API-avain',
+        'ai_engine': 'Tekoälymalli',
+        'info_text': 'Ota kuva autosta saadaksesi välittömän hinta-arvion tekoälyltä.',
+        'camera_label': 'Ota kuva',
+        'api_missing_error': '⚠️ API-avain puuttuu. Tarkista asetukset.',
+        'vehicle_details': 'Ajoneuvon Tiedot',
+        'odometer': 'Mittarilukema (km)',
+        'diesel': 'Diesel-moottori?',
+        'ev': 'Sähkö / Hybridi?',
+        'run_button': '🚀 Suorita Arviointi',
+        'analyzing': 'Analysoidaan markkinatietoja ja ajoneuvon kuntoa...',
+        'valuation_complete': 'Arviointi Valmis',
+        'conservative': '📉 Varovainen',
+        'aggressive': '📈 Aggressiivinen',
+        'retail': '🏷️ Arvioitu Myyntihinta',
+        'managers_report': '📝 Arvioijan Raportti',
+        'ai_error': 'Tekoälyvirhe: {}',
+        'prompt_instruction': 'Vastaa suomeksi. Käytä ammattimaista autokaupan sanastoa (esim. Hyvityshinta, Jälleenmyyntiarvo, Katsastus).',
+    },
+    'English': {
+        'title': 'Car Evaluation App',
+        'subtitle': 'Trade-in Valuation Tool',
+        'settings': '⚙️ Settings',
+        'api_status_ok': '🟢 API Key System: Online',
+        'api_status_error': '🔴 Connection Missing',
+        'enter_api_key': 'Enter Google API Key',
+        'ai_engine': 'AI Engine',
+        'info_text': 'Take a photo of the car to get an instant valuation from our AI Senior Buyer.',
+        'camera_label': 'Take a picture',
+        'api_missing_error': '⚠️ API Key is missing. Please check settings.',
+        'vehicle_details': 'Vehicle Details',
+        'odometer': 'Odometer Reading (km)',
+        'diesel': 'Diesel Engine?',
+        'ev': 'EV / Hybrid?',
+        'run_button': '🚀 Run Valuation',
+        'analyzing': 'Analyzing market data & vehicle condition...',
+        'valuation_complete': 'Valuation Complete',
+        'conservative': '📉 Conservative',
+        'aggressive': '📈 Aggressive',
+        'retail': '🏷️ Est. Retail',
+        'managers_report': '📝 Manager\'s Report',
+        'ai_error': 'AI Error: {}',
+        'prompt_instruction': 'Answer in English. Use professional automotive terminology.',
+    }
+}
 
 # ---------------------------------------------------------
-# 2. SIDEBAR UI
+# SIDEBAR & LANGUAGE SELECTION
 # ---------------------------------------------------------
 with st.sidebar:
-    st.header("⚙️ Settings")
+    # Language Selector (Default: Suomi)
+    language = st.radio("Kieli / Language", ['Suomi', 'English'], index=0)
+    t = translations[language]
+
+    st.header(t['settings'])
     
+    # 1. AUTHENTICATION
+    api_key_input = None
+    if os.getenv("GOOGLE_API_KEY"):
+        api_key_input = os.getenv("GOOGLE_API_KEY")
+    if not api_key_input:
+        try:
+            if "GOOGLE_API_KEY" in st.secrets:
+                api_key_input = st.secrets["GOOGLE_API_KEY"]
+        except Exception:
+            pass
+
     # VISUAL STATUS
     if api_key_input:
-        st.caption("🟢 API Key System: Online")
+        st.caption(t['api_status_ok'])
     else:
-        st.warning("🔴 Connection Missing")
-        api_key_input = st.text_input("Enter Google API Key", type="password")
+        st.warning(t['api_status_error'])
+        api_key_input = st.text_input(t['enter_api_key'], type="password")
     
     st.divider()
     
     # MODEL SELECTOR
     model_name = st.selectbox(
-        "AI Engine", 
+        t['ai_engine'], 
         [
             "gemini-1.5-flash",
             "gemini-2.0-flash-exp",
@@ -90,41 +132,53 @@ with st.sidebar:
         index=0
     )
 
+# ---------------------------------------------------------
+# MAIN UI
+# ---------------------------------------------------------
+
+# Header
+col1, col2 = st.columns([1, 4])
+with col1:
+    st.write("🚗") # Placeholder for logo
+with col2:
+    st.markdown(f"<h1 class='header-text'>{t['title']}</h1>", unsafe_allow_html=True)
+    st.markdown(f"### {t['subtitle']}")
+
 # Main Content
-st.info("Take a photo of the car to get an instant valuation from our AI Senior Buyer.")
+st.info(t['info_text'])
 
 # Camera Input
-img_file_buffer = st.camera_input("Take a picture")
+img_file_buffer = st.camera_input(t['camera_label'])
 
 if img_file_buffer is not None:
     if not api_key_input:
-        st.error("⚠️ API Key is missing. Please check settings.")
+        st.error(t['api_missing_error'])
     else:
         # 1. Show the captured image immediately
         image = Image.open(img_file_buffer)
         
         st.divider()
         
-        # 2. INPUTS (The "Phase 1" Manual Data Layer)
-        st.subheader("Vehicle Details")
+        # 2. INPUTS
+        st.subheader(t['vehicle_details'])
         col1, col2 = st.columns(2)
         
         with col1:
             # Manual input for Mileage
-            kms_input = st.number_input("Odometer Reading (km)", min_value=0, step=5000, value=150000)
+            kms_input = st.number_input(t['odometer'], min_value=0, step=5000, value=150000)
         
         with col2:
             # Manual inputs for specs
-            is_diesel = st.checkbox("Diesel Engine?", value=False)
-            is_ev = st.checkbox("EV / Hybrid?", value=False)
+            is_diesel = st.checkbox(t['diesel'], value=False)
+            is_ev = st.checkbox(t['ev'], value=False)
 
         # 3. ACTION BUTTON (Triggers the AI)
-        if st.button("🚀 Run Turku Valuation", type="primary"):
+        if st.button(t['run_button'], type="primary"):
             
             # Configure API
             genai.configure(api_key=api_key_input)
             
-            with st.spinner("Analyzing market data & vehicle condition..."):
+            with st.spinner(t['analyzing']):
                 try:
                     # Initialize model
                     model = genai.GenerativeModel(model_name)
@@ -136,6 +190,9 @@ if img_file_buffer is not None:
                     final_prompt = f"""
                     {prompts.SYSTEM_INSTRUCTION}
                     
+                    [LANGUAGE INSTRUCTION]
+                    {t['prompt_instruction']}
+
                     [USER INPUT DATA]
                     - Mileage: {kms_input} km
                     - Fuel: {fuel_type}
@@ -150,7 +207,7 @@ if img_file_buffer is not None:
                     response = model.generate_content([final_prompt, image])
                     
                     # 4. DISPLAY DASHBOARD
-                    st.success("Valuation Complete")
+                    st.success(t['valuation_complete'])
                     
                     # Regex to find price range (e.g. €400 - €900)
                     match = re.search(r'€\s?([0-9,.]+)\s?-\s?€\s?([0-9,.]+)', response.text)
@@ -162,20 +219,20 @@ if img_file_buffer is not None:
                         # Show the 3-column dashboard
                         m1, m2, m3 = st.columns(3)
                         with m1:
-                            st.metric("📉 Conservative", f"€{low_bid}")
+                            st.metric(t['conservative'], f"€{low_bid}")
                         with m2:
-                            st.metric("📈 Aggressive", f"€{high_bid}")
+                            st.metric(t['aggressive'], f"€{high_bid}")
                         with m3:
                             # Quick 'Retail' math logic
                             try:
                                 clean_high = float(high_bid.replace(',', '').replace('.', ''))
-                                st.metric("🏷️ Est. Retail", f"~€{int(clean_high * 1.3)}")
+                                st.metric(t['retail'], f"~€{int(clean_high * 1.3)}")
                             except:
-                                st.metric("🏷️ Est. Retail", "N/A")
+                                st.metric(t['retail'], "N/A")
                     
                     st.markdown("---")
-                    st.markdown("### 📝 Manager's Report")
+                    st.markdown(f"### {t['managers_report']}")
                     st.markdown(response.text)
                     
                 except Exception as e:
-                    st.error(f"AI Error: {e}")
+                    st.error(t['ai_error'].format(e))
