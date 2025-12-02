@@ -1,3 +1,4 @@
+
 import streamlit as st
 import google.generativeai as genai
 from dotenv import load_dotenv
@@ -62,6 +63,11 @@ translations = {
         'managers_report': '📝 Arvioijan Raportti',
         'ai_error': 'Tekoälyvirhe: {}',
         'prompt_instruction': 'Vastaa suomeksi. Käytä ammattimaista autokaupan sanastoa (esim. Hyvityshinta, Jälleenmyyntiarvo, Katsastus).',
+        'analysis_mode_label': 'Analyysitila',
+        'mode_quick': '⚡ Nopea Arvio',
+        'mode_deep': '🧐 Syvällinen Asiantuntija-analyysi',
+        'spinner_quick': 'Skannataan visuaalista dataa...',
+        'spinner_deep': 'Konsultoidaan asiantuntijaa & analysoidaan markkinatilannetta...',
     },
     'English': {
         'title': 'Car Evaluation App',
@@ -87,6 +93,11 @@ translations = {
         'managers_report': '📝 Manager\'s Report',
         'ai_error': 'AI Error: {}',
         'prompt_instruction': 'Answer in English. Use professional automotive terminology.',
+        'analysis_mode_label': 'Analysis Mode',
+        'mode_quick': '⚡ Quick Estimate',
+        'mode_deep': '🧐 Deep Expert Analysis',
+        'spinner_quick': 'Scanning visual data...',
+        'spinner_deep': 'Consulting Senior Specialist & Analyzing market nuances...',
     }
 }
 
@@ -120,17 +131,27 @@ with st.sidebar:
     
     st.divider()
     
-    # MODEL SELECTOR
-    model_name = st.selectbox(
-        t['ai_engine'], 
-        [
-            "gemini-1.5-flash",
-            "gemini-2.0-flash-exp",
-            "gemini-1.5-pro", 
-            "gemini-3-pro-preview"
-        ], 
-        index=0
+    # MODEL SELECTOR (Segmented Control)
+    st.caption(t['analysis_mode_label'])
+    mode_options = [t['mode_quick'], t['mode_deep']]
+    selected_mode = st.segmented_control(
+        t['analysis_mode_label'],
+        mode_options,
+        default=mode_options[0],
+        label_visibility="collapsed"
     )
+    
+    # Fallback to default if None (though default is set)
+    if not selected_mode:
+        selected_mode = mode_options[0]
+
+    # Map Selection to Backend Logic
+    if selected_mode == t['mode_quick']:
+        model_name = "gemini-2.0-flash-exp"
+        spinner_text = t['spinner_quick']
+    else:
+        model_name = "gemini-3-pro-preview"
+        spinner_text = t['spinner_deep']
 
 # ---------------------------------------------------------
 # MAIN UI
@@ -178,7 +199,7 @@ if img_file_buffer is not None:
             # Configure API
             genai.configure(api_key=api_key_input)
             
-            with st.spinner(t['analyzing']):
+            with st.spinner(spinner_text):
                 try:
                     # Initialize model
                     model = genai.GenerativeModel(model_name)
